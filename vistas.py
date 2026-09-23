@@ -1,11 +1,12 @@
 from typing import Annotated
+from pydantic import ValidationError
 from esquemas import ProductoActualizar
 
 from fastapi import APIRouter, Form, Request
 from fastapi.templating import Jinja2Templates
 
 from dependencias import ConnectionDep
-from repositorio import obtener_producto, obtener_productos
+from repositorio import actualizar_producto, obtener_producto, obtener_productos
 
 router = APIRouter(tags=["productos"])
 
@@ -25,11 +26,13 @@ async def listar_productos(request: Request, conn: ConnectionDep):
 
 @router.get("/productos/{producto_id}/editar")
 async def editar_producto_vista(request: Request, conn: ConnectionDep, producto_id: int):
-    # TODO(5): busca el producto por su id y muestra el formulario de
-    # edición con sus valores actuales.
-    # Pista: usa obtener_producto() y la plantilla
-    # "componentes/fila_editar.html". El contexto necesita:
-    # producto, nombre, precio, cantidad, descripcion y errores.
+    return templates.TemplateResponse(
+        request=request,name="componentes/fila_editar.html",context={"producto": await obtener_producto(conn, producto_id), "nombre": "", "precio": "", "cantidad": "", "descripcion": "", "errores": {}} ) 
+        # TODO(5): busca el producto por su id y muestra el formulario de
+        # edición con sus valores actuales.
+        # Pista: usa obtener_producto() y la plantilla
+        # "componentes/fila_editar.html". El contexto necesita:
+        # producto, nombre, precio, cantidad, descripcion y errores.
     ...
 
 
@@ -67,4 +70,69 @@ async def guardar_producto_vista(
     #    que el usuario escribió y los mensajes de error (HTTP 422).
     # 4. Si los datos son válidos, ejecuta actualizar_producto() y
     #    responde con la plantilla "componentes/fila_actualizada.html".
-    ...
+    producto = await obtener_producto(conn, producto_id)
+    if producto is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="componentes/producto_no_encontrado.html",
+            context={"producto_id": producto_id},
+        )
+
+    errores = {}
+
+    try:
+        precio_validado = float(precio)
+    except (TypeError, ValueError):
+        precio_validado = precio
+        errores["precio"] = "El precio debe ser un número válido."
+
+    try:
+        cantidad_validada = int(cantidad)
+    except (TypeError, ValueError):
+        cantidad_validada = cantidad
+        errores["cantidad"] = "La cantidad debe ser un número entero válido."
+
+    producto_validado = None
+    if not errores:
+        try:
+            producto_validado = ProductoActualizar(
+                nombre=nombre,
+                precio=precio_validado,
+                cantidad=cantidad_validada,
+                descripcion=descripcion,
+            )
+        except ValidationError as exc:
+            for error in exc.errors():
+                campo = error["loc"][0]
+                errores[campo] = error["msg"]
+
+    if errores:
+        return templates.TemplateResponse(
+            request=request,
+            name="componentes/fila_editar.html",
+            context={
+                "producto": producto,
+                "nombre": nombre,
+                "precio": precio,
+                "cantidad": cantidad,
+                "descripcion": descripcion,
+                "errores": errores,
+            },
+            status_code=422,
+        )
+
+    await actualizar_producto(
+        conn,
+        producto_id,
+        producto_validado.nombre,
+        producto_validado.precio,
+        producto_validado.cantidad,
+        producto_validado.descripcion,
+    )
+    producto_actualizado = await obtener_producto(conn, producto_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="componentes/fila_actualizada.html",
+        context={"producto": producto_actualizado},
+    )

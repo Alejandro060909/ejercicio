@@ -1,13 +1,14 @@
-from pydantic import BaseModel, Field, Form
+from pydantic import BaseModel, Field
+
 from typing import Annotated
 
 
 class ProductoActualizar(BaseModel):
     """Datos que el estudiante envía al editar un producto."""
-    nombre: Annotated[str | None, Form()] = None,
-    precio: Annotated[str | None, Form()] = None,
-    cantidad: Annotated[str | None, Form()] = None,
-    descripcion: Annotated[str | None, Form()] = None,
+    nombre: Annotated[str | None, Field()] = None,
+    precio: Annotated[str | None, Field()] = None,
+    cantidad: Annotated[str | None, Field()] = None,
+    descripcion: Annotated[str | None, Field()] = None,
 
 
 
