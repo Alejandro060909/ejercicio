@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 from pydantic import ValidationError
 from esquemas import ProductoActualizar
@@ -10,7 +11,7 @@ from repositorio import actualizar_producto, obtener_producto, obtener_productos
 
 router = APIRouter(tags=["productos"])
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
 @router.get("/productos")
