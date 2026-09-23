@@ -1,2 +1,5 @@
-fastapi[standard]
+fastapi
 asyncpg
+jinja2
+python-multipart
+pydantic
