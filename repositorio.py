@@ -54,8 +54,6 @@ async def actualizar_producto(
         cantidad,
         descripcion,
     )
-    # TODO(4): escribe la consulta UPDATE parametrizada.
-    # Pista: asyncpg devuelve "UPDATE 1" si modificó una fila.
-    ...
+    return fila == "UPDATE 1"
     
    

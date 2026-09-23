@@ -26,14 +26,25 @@ async def listar_productos(request: Request, conn: ConnectionDep):
 
 @router.get("/productos/{producto_id}/editar")
 async def editar_producto_vista(request: Request, conn: ConnectionDep, producto_id: int):
+    producto = await obtener_producto(conn, producto_id)
+    if producto is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="componentes/producto_no_encontrado.html",
+            context={"producto_id": producto_id},
+        )
     return templates.TemplateResponse(
-        request=request,name="componentes/fila_editar.html",context={"producto": await obtener_producto(conn, producto_id), "nombre": "", "precio": "", "cantidad": "", "descripcion": "", "errores": {}} ) 
-        # TODO(5): busca el producto por su id y muestra el formulario de
-        # edición con sus valores actuales.
-        # Pista: usa obtener_producto() y la plantilla
-        # "componentes/fila_editar.html". El contexto necesita:
-        # producto, nombre, precio, cantidad, descripcion y errores.
-    ...
+        request=request,
+        name="componentes/fila_editar.html",
+        context={
+            "producto": producto,
+            "nombre": producto["nombre"],
+            "precio": producto["precio"],
+            "cantidad": producto["cantidad"],
+            "descripcion": producto["descripcion"],
+            "errores": {},
+        },
+    )
 
 
 @router.get("/productos/{producto_id}/cancelar")
@@ -58,10 +69,10 @@ async def guardar_producto_vista(
     request: Request,
     conn: ConnectionDep,
     producto_id: int,
-    nombre: Annotated[ProductoActualizar | None, Form()] = None,
-    precio: Annotated[ProductoActualizar | None, Form()] = None,
-    cantidad: Annotated[ProductoActualizar | None, Form()] = None,
-    descripcion: Annotated[ProductoActualizar | None, Form()] = None,
+    nombre: Annotated[str, Form()] = "",
+    precio: Annotated[str, Form()] = "",
+    cantidad: Annotated[str, Form()] = "",
+    descripcion: Annotated[str | None, Form()] = None,
 ):
     # TODO(6): este es el corazón del ejercicio. Pasos a seguir:
     # 1. Convierte precio y cantidad a número (float / int).
@@ -93,18 +104,17 @@ async def guardar_producto_vista(
         errores["cantidad"] = "La cantidad debe ser un número entero válido."
 
     producto_validado = None
-    if not errores:
-        try:
-            producto_validado = ProductoActualizar(
-                nombre=nombre,
-                precio=precio_validado,
-                cantidad=cantidad_validada,
-                descripcion=descripcion,
-            )
-        except ValidationError as exc:
-            for error in exc.errors():
-                campo = error["loc"][0]
-                errores[campo] = error["msg"]
+    try:
+        producto_validado = ProductoActualizar(
+            nombre=nombre,
+            precio=precio_validado,
+            cantidad=cantidad_validada,
+            descripcion=descripcion,
+        )
+    except ValidationError as exc:
+        for error in exc.errors():
+            campo = error["loc"][0]
+            errores.setdefault(campo, error["msg"])
 
     if errores:
         return templates.TemplateResponse(
@@ -130,6 +140,13 @@ async def guardar_producto_vista(
         producto_validado.descripcion,
     )
     producto_actualizado = await obtener_producto(conn, producto_id)
+
+    if producto_actualizado is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="componentes/producto_no_encontrado.html",
+            context={"producto_id": producto_id},
+        )
 
     return templates.TemplateResponse(
         request=request,
