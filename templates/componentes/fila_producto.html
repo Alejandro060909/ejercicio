@@ -11,7 +11,7 @@
                la respuesta del servidor reemplaza este tbody completo. #}
             <button
                 hx-get="/productos/{{ producto.id }}/editar"
-                hx-target="#producto-{{ producto.id }}"
+                hx-target="closest tr"
                 hx-swap="outerHTML">
                 Editar
             </button>

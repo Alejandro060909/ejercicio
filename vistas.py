@@ -1,4 +1,5 @@
 from typing import Annotated
+from esquemas import ProductoActualizar
 
 from fastapi import APIRouter, Form, Request
 from fastapi.templating import Jinja2Templates
@@ -54,10 +55,10 @@ async def guardar_producto_vista(
     request: Request,
     conn: ConnectionDep,
     producto_id: int,
-    nombre: Annotated[str | None, Form()] = None,
-    precio: Annotated[str | None, Form()] = None,
-    cantidad: Annotated[str | None, Form()] = None,
-    descripcion: Annotated[str | None, Form()] = None,
+    nombre: Annotated[ProductoActualizar | None, Form()] = None,
+    precio: Annotated[ProductoActualizar | None, Form()] = None,
+    cantidad: Annotated[ProductoActualizar | None, Form()] = None,
+    descripcion: Annotated[ProductoActualizar | None, Form()] = None,
 ):
     # TODO(6): este es el corazón del ejercicio. Pasos a seguir:
     # 1. Convierte precio y cantidad a número (float / int).
