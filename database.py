@@ -1,5 +1,3 @@
-import os
-
 import asyncpg
 
 
@@ -8,13 +6,9 @@ class Db:
 
     pool: asyncpg.Pool | None = None
 
-    async def connect(self, database_url: str | None = None):
-        dsn = database_url or os.getenv("DATABASE_URL")
-        if not dsn:
-            raise RuntimeError("La variable de entorno DATABASE_URL no está configurada")
-
-        # Un pool pequeño evita abrir demasiadas conexiones en funciones serverless.
-        self.pool = await asyncpg.create_pool(dsn=dsn, min_size=0, max_size=5)
+    async def connect(self, database_url: str):
+        # Crea un pool: varias conexiones que se reutilizan entre peticiones.
+        self.pool = await asyncpg.create_pool(dsn=database_url)
 
     async def close(self):
         if self.pool is not None:
